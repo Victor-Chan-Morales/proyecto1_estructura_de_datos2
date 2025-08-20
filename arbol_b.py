@@ -17,129 +17,124 @@ class Proveedor:
         return self.__str__()
 
 class BTreeNode:
-    def __init__(self, t, leaf=False):
-        self.t = t 
+    def __init__(self, leaf=False):
         self.leaf = leaf
         self.keys = []
         self.children = []
 
-    # MÉTODO INSERTAR (no lleno)
-    def insert_non_full(self, proveedor):
-        i = len(self.keys) - 1
-        
+    def insert(self, proveedor):
         if self.leaf:
-            self.keys.append(None)
-            while i >= 0 and proveedor.id < self.keys[i].id:
-                self.keys[i + 1] = self.keys[i]
-                i -= 1
-            self.keys[i + 1] = proveedor
+            self.keys.append(proveedor)
+            self.keys.sort(key=lambda x: x.id)
         else:
-            while i >= 0 and proveedor.id < self.keys[i].id:
-                i -= 1
-            i += 1
+            i = 0
+            while i < len(self.keys) and proveedor.id > self.keys[i].id:
+                i += 1
             
-            if len(self.children[i].keys) == 2 * self.t - 1:
-                self.split_child(i)
-                if proveedor.id > self.keys[i].id:
-                    i += 1
-                    
-            self.children[i].insert_non_full(proveedor)
+            if i < len(self.children):
+                self.children[i].insert(proveedor)
+            else:
+                new_child = BTreeNode(leaf=True)
+                new_child.insert(proveedor)
+                self.children.append(new_child)
 
-    def split_child(self, i):
-        t = self.t
-        y = self.children[i]
-        z = BTreeNode(t, y.leaf)
-        
-        z.keys = y.keys[t:]
-        y.keys = y.keys[:t-1]
-        
-        if not y.leaf:
-            z.children = y.children[t:]
-            y.children = y.children[:t]
-        
-        self.keys.insert(i, y.keys.pop())
-        self.children.insert(i + 1, z)
-
-    # MÉTODO MOSTRAR (recorrido inorden)
     def traverse_inorder(self):
+        result = []
         for i in range(len(self.keys)):
-            if not self.leaf:
-                self.children[i].traverse_inorder()
-            print(self.keys[i])
-        if not self.leaf:
-            self.children[len(self.keys)].traverse_inorder()
+            if i < len(self.children):
+                result.extend(self.children[i].traverse_inorder())
+            result.append(self.keys[i])
+        
+        if len(self.children) > len(self.keys):
+            result.extend(self.children[-1].traverse_inorder())
+        
+        return result
 
-    # MÉTODO BUSCAR (por servicio)
     def search_by_service(self, tipo_servicio):
         results = []
         for key in self.keys:
             if key.tipo_servicio.lower() == tipo_servicio.lower():
                 results.append(key)
         
-        if not self.leaf:
-            for child in self.children:
-                results.extend(child.search_by_service(tipo_servicio))
+        for child in self.children:
+            results.extend(child.search_by_service(tipo_servicio))
         
         return results
 
-    def collect_levels(self):
-        result = []
-        queue = deque([(self, 0)])
-        while queue:
-            node, level = queue.popleft()
-            if len(result) <= level:
-                result.append([])
-            
-            result[level].append([p.id for p in node.keys])
-            
-            for child in node.children:
-                queue.append((child, level + 1))
-        return result
-
 class BTree:
-    def __init__(self, m):
-        self.order = m
-        self.t = ceil(m / 2)
-        self.root = BTreeNode(self.t, True)
+    def __init__(self, order=4):
+        self.order = order
+        self.root = BTreeNode(leaf=True)
 
-    # MÉTODO INSERTAR PRINCIPAL
     def insert(self, proveedor):
-        root = self.root
+        if len(self.root.keys) >= self.order:
+            old_root = self.root
+            self.root = BTreeNode(leaf=False)
+            self.root.children.append(old_root)
+            self._split_child(self.root, 0)
         
-        if len(root.keys) == 2 * self.t - 1:
-            new_root = BTreeNode(self.t, False)
-            new_root.children.append(self.root)
-            new_root.split_child(0)
-            
-            i = 0
-            if proveedor.id > new_root.keys[0].id:
-                i = 1
-            new_root.children[i].insert_non_full(proveedor)
-            
-            self.root = new_root
-        else:
-            self.root.insert_non_full(proveedor)
+        self._insert_non_full(self.root, proveedor)
 
-    # MÉTODO MOSTRAR PRINCIPAL
+    def _insert_non_full(self, node, proveedor):
+        if node.leaf:
+            # Insertar en nodo hoja
+            node.keys.append(proveedor)
+            node.keys.sort(key=lambda x: x.id)
+        else:
+            i = 0
+            while i < len(node.keys) and proveedor.id > node.keys[i].id:
+                i += 1
+            
+            if len(node.children[i].keys) >= self.order:
+                self._split_child(node, i)
+                if proveedor.id > node.keys[i].id:
+                    i += 1
+            
+            self._insert_non_full(node.children[i], proveedor)
+
+    def _split_child(self, parent, child_index):
+        child = parent.children[child_index]
+        new_child = BTreeNode(leaf=child.leaf)
+        
+        mid = len(child.keys) // 2
+        new_child.keys = child.keys[mid + 1:]
+        child.keys = child.keys[:mid]
+        
+        if not child.leaf:
+            new_child.children = child.children[mid + 1:]
+            child.children = child.children[:mid + 1]
+        
+        parent.keys.insert(child_index, child.keys.pop())
+        parent.children.insert(child_index + 1, new_child)
+
     def traverse_inorder(self):
         print("Listado de Proveedores:")
-        self.root.traverse_inorder()
+        if len(self.root.keys) == 0:
+            print("El árbol está vacío.")
+        else:
+            all_proveedores = self.root.traverse_inorder()
+            for proveedor in all_proveedores:
+                print(proveedor)
         print()
 
-    def display(self):
-        print("Visualización del árbol por niveles:")
-        levels = self.root.collect_levels()
-        for i, level_nodes in enumerate(levels):
-            print(f"Nivel {i}: ", end="")
-            for node_keys in level_nodes:
-                print(f"{node_keys} ", end="")
-            print()
-
-    # MÉTODO BUSCAR PRINCIPAL
     def search_by_service(self, tipo_servicio):
+        if len(self.root.keys) == 0:
+            return []
         results = self.root.search_by_service(tipo_servicio)
         results.sort(key=attrgetter("calificacion"), reverse=True)
         return results
+
+    def display(self):
+        print("Visualización del árbol por niveles:")
+        if len(self.root.keys) == 0:
+            print("El árbol está vacío.")
+        else:
+            self._display_recursive(self.root, 0)
+
+    def _display_recursive(self, node, level):
+        print(f"Nivel {level}: {[p.id for p in node.keys]}")
+        for child in node.children:
+            self._display_recursive(child, level + 1)
     
 
 
