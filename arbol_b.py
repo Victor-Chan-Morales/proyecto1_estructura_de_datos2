@@ -70,15 +70,15 @@ class BTreeNode:
             self.children[len(self.keys)].traverse_inorder()
 
     # MÉTODO BUSCAR (por servicio)
-    def search_by_service(self, service_type):
+    def search_by_service(self, tipo_servicio):
         results = []
         for key in self.keys:
-            if key.tipo_servicio.lower() == service_type.lower():
+            if key.tipo_servicio.lower() == tipo_servicio.lower():
                 results.append(key)
         
         if not self.leaf:
             for child in self.children:
-                results.extend(child.search_by_service(service_type))
+                results.extend(child.search_by_service(tipo_servicio))
         
         return results
 

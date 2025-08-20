@@ -26,7 +26,7 @@ def registrar_trabajador():
         calificacion = definir_calificacion()
         
         while True:
-            ubicacion = input("Ubicación: ").strip()
+            ubicacion = input("Ubicación (km): ").strip()
             if ubicacion and len(ubicacion) > 0:
                 break
             print("Error: La ubicación no puede estar vacía. Inténtelo de nuevo.")
@@ -89,7 +89,7 @@ def definir_servicio():
 def definir_calificacion():
     while True:
         os.system("cls")
-        print("Escoja la reputación del proveedor")
+        print("Escoja la calificación del proveedor")
         print("1. Muy baja")
         print("2. Baja")
         print("3. Normal")
