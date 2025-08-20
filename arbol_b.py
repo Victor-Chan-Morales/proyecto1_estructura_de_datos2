@@ -3,14 +3,18 @@ from math import ceil
 from operator import attrgetter
 
 class Proveedor:
-    def __init__(self, id, nombre, tipo_servicio, calificacion):
+    def __init__(self, id, nombre, tipo_servicio, calificacion, ubicacion):
         self.id = id
         self.nombre = nombre
         self.tipo_servicio = tipo_servicio
         self.calificacion = calificacion
+        self.ubicacion = ubicacion
 
     def __str__(self):
-        return f"ID: {self.id}, Nombre: {self.nombre}, Servicio: {self.tipo_servicio}, Calificación: {self.calificacion}"
+        return f"ID: {self.id}, Nombre: {self.nombre}, Servicio: {self.tipo_servicio}, Calificación: {self.calificacion}, Ubicación: {self.ubicacion}"
+
+    def __repr__(self):
+        return self.__str__()
 
 class BTreeNode:
     def __init__(self, t, leaf=False):
@@ -118,7 +122,7 @@ class BTree:
 
     # MÉTODO MOSTRAR PRINCIPAL
     def traverse_inorder(self):
-        print("Recorrido inorden de proveedores:")
+        print("Listado de Proveedores:")
         self.root.traverse_inorder()
         print()
 
